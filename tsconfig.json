@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "ignore": ["node_modules", "dist"],
+  },
+}

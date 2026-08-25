@@ -1,0 +1,37 @@
+{
+  "scripts": {
+    "dev": "tsx --watch app.mts",
+    "build": "rspack",
+    "scripts:example": "tsx scripts/example.tsx"
+  },
+  "dependencies": {
+    "@hapi/hapi": "^21.4.10",
+    "@swc/core": "^1.15.47",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0",
+    "@types/serialize-javascript": "^5.0.4",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14",
+    "pirates": "^4.0.7",
+    "query-string": "^9.5.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "rspack-manifest-plugin": "^5.2.2",
+    "serialize-javascript": "^7.1.0",
+    "tsx": "^4.23.12",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^2.1.13",
+    "@rsbuild/plugin-react": "^2.1.0",
+    "@rsbuild/plugin-type-check": "^1.6.0",
+    "@rspack/cli": "^2.1.10",
+    "@rspack/core": "^2.1.9",
+    "@rspack/dev-server": "^2.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@types/webpack-node-externals": "^3.0.4",
+    "run-script-webpack-plugin": "^0.2.3",
+    "webpack-node-externals": "^3.0.0"
+  }
+}
