@@ -2,6 +2,12 @@
 
 A fixture, code, and explanation, of the single component, rendered on the server and the clien.
 
+## TODO
+
+- Isomorphic data fetching
+- Tailwind integration
+- CSS imports `import ./styles.css`
+
 ## Explanation
 
 The code implements single, catch all, route that performs Streaming Server Side Rendering.

@@ -183,6 +183,16 @@ app.use(
   }),
 );
 
+app.use(async (_req, _res, next) => {
+  // it makes sense to wait until compilers are done, to start
+  // performing server side rendering
+  await new Promise<void>((resolve) =>
+    devMiddlewareInstance.waitUntilValid(() => resolve()),
+  );
+
+  return next();
+});
+
 function evalBundle(src: string, filename: string) {
   const _module = { exports: {} };
   const _require = Module.createRequire(filename);
@@ -195,19 +205,8 @@ function evalBundle(src: string, filename: string) {
   return _module.exports;
 }
 
-app.get(/^\/(?!static\/).*/, async (req, res, next) => {
+app.get(/^\/(?!static\/).*/, (req, res, next) => {
   try {
-    // (ai ignore): todo - this doesn't work, there are hydration missmatches
-    // as soon as we start editing the App.tsx component :(
-    //
-    // the require below fixes the require caching issue, however
-    // i don't know if this piece of code contributes at all, i will leave it
-    // because it makes sense to wait until compilers are done, to start
-    // performing server side rendering
-    await new Promise<void>((resolve) =>
-      devMiddlewareInstance.waitUntilValid(() => resolve()),
-    );
-
     const memfs = devMiddlewareInstance.context
       .outputFileSystem as typeof import('node:fs') &
       import('@rspack/dev-middleware').OutputFileSystem;
@@ -235,7 +234,6 @@ app.get(/^\/(?!static\/).*/, async (req, res, next) => {
       ),
     );
 
-    // todo: handle error, destination stream closed early
     let didError = false;
     const { pipe, abort } = renderToPipeableStream(<App />, {
       bootstrapScripts: manifest.entrypoints.main,
