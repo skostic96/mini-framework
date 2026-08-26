@@ -5,8 +5,5 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
   },
-  "ts-node": {
-    "transpileOnly": true,
-    "ignore": ["node_modules", "dist"],
-  },
+  "ignore": ["node_modules", "dist"],
 }

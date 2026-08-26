@@ -11,21 +11,42 @@ importers:
       '@hapi/hapi':
         specifier: ^21.4.10
         version: 21.4.10
+      '@rspack/dev-middleware':
+        specifier: ^2.0.3
+        version: 2.0.3(@rspack/core@2.1.10(@swc/helpers@0.5.23))
+      '@rspack/plugin-react-refresh':
+        specifier: ^2.0.2
+        version: 2.0.2(@rspack/core@2.1.10(@swc/helpers@0.5.23))(react-refresh@0.18.0)
       '@swc/core':
         specifier: ^1.15.47
         version: 1.16.0(@swc/helpers@0.5.23)
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
+      '@types/is-object':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
       '@types/serialize-javascript':
         specifier: ^5.0.4
         version: 5.0.4
+      '@types/webpack-env':
+        specifier: ^1.18.8
+        version: 1.18.8
+      '@types/webpack-hot-middleware':
+        specifier: ^2.25.12
+        version: 2.25.12(@swc/core@1.16.0(@swc/helpers@0.5.23))(esbuild@0.28.2)
+      '@typescript/typescript6':
+        specifier: ^6.0.2
+        version: 6.0.2
       express:
         specifier: ^5.2.1
         version: 5.2.1(supports-color@5.5.0)
+      is-object:
+        specifier: ^1.0.2
+        version: 1.0.2
       nodemon:
         specifier: ^3.1.14
         version: 3.1.14
@@ -41,6 +62,9 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
+      react-refresh:
+        specifier: ^0.18.0
+        version: 0.18.0
       rspack-manifest-plugin:
         specifier: ^5.2.2
         version: 5.2.2(@rspack/core@2.1.10(@swc/helpers@0.5.23))
@@ -50,6 +74,15 @@ importers:
       tsx:
         specifier: ^4.23.12
         version: 4.23.12
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      webpack-hot-middleware:
+        specifier: ^2.26.1
+        version: 2.26.1
+      webpack-hot-server-middleware:
+        specifier: ^0.6.1
+        version: 0.6.1(supports-color@5.5.0)(webpack@5.109.2(@swc/core@1.16.0(@swc/helpers@0.5.23))(esbuild@0.28.2))
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -767,6 +800,9 @@ packages:
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
 
+  '@types/is-object@1.0.5':
+    resolution: {integrity: sha512-Ik3iCauN9ApkSeHHf7s0AFGrEEvLhePibD2FMbSD6tTXqlOSMraY116OJ9SyV0iyVrnrF/7XBOdvN9Ah3bUp3g==}
+
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -795,6 +831,12 @@ packages:
 
   '@types/serve-static@2.2.0':
     resolution: {integrity: sha512-8mam4H1NHLtu7nmtalF7eyBH14QyOASmcxHhSfEoRyr0nP/YdoesEtU+uSRvMe96TW/HPTtkoKqQLl53N7UXMQ==}
+
+  '@types/webpack-env@1.18.8':
+    resolution: {integrity: sha512-G9eAoJRMLjcvN4I08wB5I7YofOb/kaJNd5uoCMX+LbKXTPCF+ZIHuqTnFaK9Jz1rgs035f9JUPUhNFtqgucy/A==}
+
+  '@types/webpack-hot-middleware@2.25.12':
+    resolution: {integrity: sha512-3CHRpHNHrdXcXqIyL51UmnoqhxNIZSMpJT4Y2EezZa9DCst7+a03Y1iWUtwYb0oYiZJJkCwhGnW2bwgmaEwsAg==}
 
   '@types/webpack-node-externals@3.0.4':
     resolution: {integrity: sha512-8Z3/edqxE3RRlOJwKSgOFxLZRt/i1qFlv/Bi308ZUKo9jh8oGngd9r8GR0ZNKW5AEJq8QNQE3b17CwghTjQ0Uw==}
@@ -919,6 +961,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@typescript/typescript6@6.0.2':
+    resolution: {integrity: sha512-mbCddXd+jm7hfx7w2YU64/Av4/NqqeG3GoRZgxPcgoTxYjhrcfJRw9ULch71SS4G+Q3bOXFhRvPqjguN0Hyp5w==}
+    hasBin: true
+
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
 
@@ -994,6 +1040,15 @@ packages:
 
   ajv@8.20.0:
     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
+
+  ansi-html-community@0.0.8:
+    resolution: {integrity: sha512-1APHAyr3+PCamwNw3bXCPp4HFLONZt/yIH0sZp0/469KWNTEy+qN5jQ3GVX6DMZ1UXAi34yVwtTeaG/HpBuuzw==}
+    engines: {'0': node >= 0.8.0}
+    hasBin: true
+
+  ansi-regex@5.0.1:
+    resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
+    engines: {node: '>=8'}
 
   anymatch@3.1.3:
     resolution: {integrity: sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==}
@@ -1080,6 +1135,14 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  debug@3.2.7:
+    resolution: {integrity: sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -1250,6 +1313,9 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
+  html-entities@2.6.0:
+    resolution: {integrity: sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ==}
+
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
@@ -1287,6 +1353,9 @@ packages:
   is-number@7.0.0:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
     engines: {node: '>=0.12.0'}
+
+  is-object@1.0.2:
+    resolution: {integrity: sha512-2rRIahhZr2UWb45fIOuvZGpFtz0TyOZLf32KxBbSoUCeZR495zCKlWUKKUByk3geS2eAs7ZAABt0Y/Rx0GiQGA==}
 
   is-promise@4.0.0:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
@@ -1556,6 +1625,10 @@ packages:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
 
+  strip-ansi@6.0.1:
+    resolution: {integrity: sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==}
+    engines: {node: '>=8'}
+
   supports-color@5.5.0:
     resolution: {integrity: sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==}
     engines: {node: '>=4'}
@@ -1621,6 +1694,11 @@ packages:
     resolution: {integrity: sha512-faYHw0anBbc/kWF3zFTEnxSFOAGUX9GFbOBthvDdLsIlEoWOFOtS0zgCiQYwIskL9iGXZL3kAXD8OoZ4GmMATA==}
     engines: {node: '>= 18'}
 
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
     engines: {node: '>=16.20.0'}
@@ -1649,6 +1727,14 @@ packages:
   watchpack@2.5.2:
     resolution: {integrity: sha512-6i/00NBjP4yGPs+caKSyRfpTF/8Torsu0MOW3mMzIbhgISFder8i7xbqgHlLMwJrdiN8ndBV3UA1/AfzPSr+jg==}
     engines: {node: '>=10.13.0'}
+
+  webpack-hot-middleware@2.26.1:
+    resolution: {integrity: sha512-khZGfAeJx6I8K9zKohEWWYN6KDlVw2DHownoe+6Vtwj1LP9WFgegXnVMSkZ/dBEBtXFwrkkydsaPFlB7f8wU2A==}
+
+  webpack-hot-server-middleware@0.6.1:
+    resolution: {integrity: sha512-YOKwdS0hnmADsNCsReGkMOBkoz2YVrQZvnVcViM2TDXlK9NnaOGXmnrLFjzwsHFa0/iuJy/QJFEoMxzk8R1Mgg==}
+    peerDependencies:
+      webpack: '*'
 
   webpack-node-externals@3.0.0:
     resolution: {integrity: sha512-LnL6Z3GGDPht/AigwRh2dvL9PQPFQ8skEpVrWZXLWBYmqcaojHNN0onvHzie6rq7EWKrrBfPYqNEzTJgiwEQDQ==}
@@ -2303,6 +2389,8 @@ snapshots:
 
   '@types/http-errors@2.0.5': {}
 
+  '@types/is-object@1.0.5': {}
+
   '@types/json-schema@7.0.15': {}
 
   '@types/node@26.2.0':
@@ -2331,6 +2419,28 @@ snapshots:
     dependencies:
       '@types/http-errors': 2.0.5
       '@types/node': 26.2.0
+
+  '@types/webpack-env@1.18.8': {}
+
+  '@types/webpack-hot-middleware@2.25.12(@swc/core@1.16.0(@swc/helpers@0.5.23))(esbuild@0.28.2)':
+    dependencies:
+      '@types/connect': 3.4.38
+      tapable: 2.3.3
+      webpack: 5.109.2(@swc/core@1.16.0(@swc/helpers@0.5.23))(esbuild@0.28.2)
+    transitivePeerDependencies:
+      - '@minify-html/node'
+      - '@swc/core'
+      - '@swc/css'
+      - '@swc/html'
+      - clean-css
+      - cssnano
+      - csso
+      - esbuild
+      - html-minifier-terser
+      - lightningcss
+      - postcss
+      - uglify-js
+      - webpack-cli
 
   '@types/webpack-node-externals@3.0.4(@swc/core@1.16.0(@swc/helpers@0.5.23))(esbuild@0.28.2)':
     dependencies:
@@ -2410,6 +2520,10 @@ snapshots:
 
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
+
+  '@typescript/typescript6@6.0.2':
+    dependencies:
+      '@typescript/old': typescript@6.0.3
 
   '@webassemblyjs/ast@1.14.1':
     dependencies:
@@ -2514,6 +2628,10 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
+  ansi-html-community@0.0.8: {}
+
+  ansi-regex@5.0.1: {}
+
   anymatch@3.1.3:
     dependencies:
       normalize-path: 3.0.0
@@ -2598,6 +2716,12 @@ snapshots:
   cookie@0.7.2: {}
 
   csstype@3.2.3: {}
+
+  debug@3.2.7(supports-color@5.5.0):
+    dependencies:
+      ms: 2.1.3
+    optionalDependencies:
+      supports-color: 5.5.0
 
   debug@4.4.3(supports-color@5.5.0):
     dependencies:
@@ -2791,6 +2915,8 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  html-entities@2.6.0: {}
+
   http-errors@2.0.1:
     dependencies:
       depd: 2.0.0
@@ -2822,6 +2948,8 @@ snapshots:
       is-extglob: 2.1.1
 
   is-number@7.0.0: {}
+
+  is-object@1.0.2: {}
 
   is-promise@4.0.0: {}
 
@@ -3071,6 +3199,10 @@ snapshots:
 
   statuses@2.0.2: {}
 
+  strip-ansi@6.0.1:
+    dependencies:
+      ansi-regex: 5.0.1
+
   supports-color@5.5.0:
     dependencies:
       has-flag: 3.0.0
@@ -3128,6 +3260,8 @@ snapshots:
       media-typer: 1.1.1
       mime-types: 3.0.2
 
+  typescript@6.0.3: {}
+
   typescript@7.0.2:
     optionalDependencies:
       '@typescript/typescript-aix-ppc64': 7.0.2
@@ -3168,6 +3302,21 @@ snapshots:
   watchpack@2.5.2:
     dependencies:
       graceful-fs: 4.2.11
+
+  webpack-hot-middleware@2.26.1:
+    dependencies:
+      ansi-html-community: 0.0.8
+      html-entities: 2.6.0
+      strip-ansi: 6.0.1
+
+  webpack-hot-server-middleware@0.6.1(supports-color@5.5.0)(webpack@5.109.2(@swc/core@1.16.0(@swc/helpers@0.5.23))(esbuild@0.28.2)):
+    dependencies:
+      debug: 3.2.7(supports-color@5.5.0)
+      require-from-string: 2.0.2
+      source-map-support: 0.5.21
+      webpack: 5.109.2(@swc/core@1.16.0(@swc/helpers@0.5.23))(esbuild@0.28.2)
+    transitivePeerDependencies:
+      - supports-color
 
   webpack-node-externals@3.0.0: {}
 
