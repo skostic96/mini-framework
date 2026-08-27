@@ -1,4 +1,5 @@
 import App from './App';
+import { StrictMode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import {
   QueryClientProvider,
@@ -43,9 +44,11 @@ function digestOf(error: unknown): string | null {
 
 hydrateRoot(
   document,
-  <QueryClientProvider client={queryClient}>
-    <App />
-  </QueryClientProvider>,
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </StrictMode>,
   {
     onRecoverableError(error, errorInfo) {
       console.warn(digestOf(error), error, errorInfo);

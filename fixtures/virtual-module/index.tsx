@@ -229,9 +229,12 @@ app.get(/^\/(?!static\/).*/, (req, res, next) => {
     const serverBundle = memfs.readFileSync(serverBundlePath, 'utf-8');
 
     // (ai ignore)(todo): fix the typing... maybe...
-    const App = (
-      evalBundle(serverBundle, serverBundlePath) as typeof import('./App')
-    ).default;
+    const bundleExports = evalBundle(
+      serverBundle,
+      serverBundlePath,
+    ) as typeof import('./App');
+
+    const App = bundleExports.default;
 
     const manifest = manifestSchema.parse(
       JSON.parse(
