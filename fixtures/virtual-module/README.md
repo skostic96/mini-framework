@@ -255,6 +255,12 @@ The library covers the vast majority of the useful bots we should care about. I 
 
 There are also things to cover, such as early aborted requests: making sure the server handles those aborts by closing the stream correctly, avoiding multiple `pipe()` calls on the `res` (response) object, and so on.
 
+### A nice streaming library to look at
+
+<https://github.com/brillout/react-streaming/tree/main>
+
+This library may not be mainstream due to low download count, but is an awesome reference on how to use & manage streaming server side rendering using react.
+
 ### WARNING - different module import instances
 
 ```ts
