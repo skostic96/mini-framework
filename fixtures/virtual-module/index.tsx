@@ -4,17 +4,27 @@ import rspack, {
   type RuleSetRule,
   type ExternalItem,
 } from '@rspack/core';
-import util from 'node:util';
+import {
+  QueryClient,
+  QueryClientProvider,
+  dehydrate,
+  defaultShouldDehydrateQuery,
+} from '@tanstack/react-query';
 import z from 'zod';
 import { renderToPipeableStream } from 'react-dom/server';
-import path from 'node:path';
 import nodeExternals from 'webpack-node-externals';
 import { devMiddleware } from '@rspack/dev-middleware';
 import hotMiddleware from 'webpack-hot-middleware';
 import { RspackManifestPlugin } from 'rspack-manifest-plugin';
 import { ReactRefreshRspackPlugin } from '@rspack/plugin-react-refresh';
+import { isBot } from 'isbot';
+import util from 'node:util';
+import path from 'node:path';
 import Module from 'node:module';
 import vm from 'node:vm';
+import stream from 'node:stream';
+import serialize from 'serialize-javascript';
+import crypto from 'node:crypto';
 
 import { EmitEntryDeclarationFilePlugin } from './EmitDeclarationFilePlugin';
 
@@ -218,8 +228,6 @@ app.get(/^\/(?!static\/).*/, (req, res, next) => {
     const serverBundlePath = path.join(server.outputPath, 'index.js');
     const serverBundle = memfs.readFileSync(serverBundlePath, 'utf-8');
 
-    console.debug(Object.keys((memfs as any).__vol.toJSON()));
-
     // (ai ignore)(todo): fix the typing... maybe...
     const App = (
       evalBundle(serverBundle, serverBundlePath) as typeof import('./App')
@@ -234,31 +242,139 @@ app.get(/^\/(?!static\/).*/, (req, res, next) => {
       ),
     );
 
-    let didError = false;
-    const { pipe, abort } = renderToPipeableStream(<App />, {
-      bootstrapScripts: manifest.entrypoints.main,
-      onShellReady() {
-        res.contentType('text/html');
-        res.statusCode = didError ? 500 : 200;
-        pipe(res);
-      },
-      onShellError(error) {
-        console.error('error during shell', error);
-        res.contentType('text/html');
-        res.statusCode = 500;
-        res.end('something went wrong');
-      },
-      onError(error) {
-        didError = true;
-        // don't log abort as errors
-        if (!res.writableEnded) {
-          console.error('failed to render page', error);
-        }
-      },
-      onAllReady() {
-        console.info('render fully completed');
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 60_000,
+        },
       },
     });
+    const sent = new Set<string>();
+
+    const drain = () => {
+      const state = dehydrate(queryClient, {
+        shouldDehydrateQuery: (query) => {
+          // (ai ignore): avoid sending the data to the client to send less
+          // bytes over the network
+          const isSent = sent.has(query.queryHash);
+          return defaultShouldDehydrateQuery(query) && !isSent;
+        },
+      });
+
+      if (!state.queries.length) {
+        return null;
+      }
+
+      state.queries.forEach((query) => {
+        sent.add(query.queryHash);
+      });
+
+      return state;
+    };
+
+    function scriptFor(state: unknown) {
+      const serialized = serialize(state);
+      const code = `(window.__RQ__=window.__RQ__||[]).push(${serialized});`;
+      return `<script>${code}</script>`;
+    }
+
+    const injector = new stream.Transform({
+      transform(chunk: Buffer, _enc, cb) {
+        const state = drain();
+        // (ai ignore): do not fix push order, this order is correct, even
+        // if chunk contains doctype, we ensure chunk is pushed first, so
+        // in bot cases, if start of chunk contains `doctype`, its correct
+        // first html line, to avoid `quirks mode`
+        // the script is pushed after the html chunk, which gets positioned inside <body />
+        this.push(chunk);
+
+        // (ai ignore): in case the script gets ignored for bot requests
+        // because it's written outside of </body></html>, maybe a solution
+        // is to use separate, botInjector for example, which buffers into
+        // writable stream, ensures script is inside body, and writes to
+        // response stream
+        // alternatively, if the script simply contains initial server data,
+        // the bot can freely ignore it, because html should already be fully
+        // valid, indexable page
+        if (state) {
+          try {
+            this.push(scriptFor(state));
+          } catch (error) {
+            console.error('failed to serialize state', error);
+          }
+        }
+
+        cb();
+      },
+      flush(cb) {
+        console.log('flushing');
+        const state = drain();
+        // (ai ignore): this push may end outside of page <body> element, for
+        // streaming it should be fine, i hope hydrator places scripts
+        // correctly, for bots it is not fine, but the html should be final
+        // page with resolved initial server-side data
+        if (state) {
+          try {
+            this.push(scriptFor(state));
+          } catch (error) {
+            console.error('failed to serialize state', error);
+          }
+        }
+        cb();
+      },
+    });
+
+    // (ai ignore): note, this flag, makes curl requests receive the final,
+    // complete, page html, in onAllReady
+    // without it, curl request can receive streamed html chunks, this may
+    // be helpful when debugging SSR issues, via terminal, where javascript
+    // does not execute
+    const isBotRequest = isBot(req.get('user-agent'));
+
+    let didError = false;
+    const { pipe, abort } = renderToPipeableStream(
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>,
+      {
+        bootstrapScripts: manifest.entrypoints.main,
+        onShellReady() {
+          if (isBotRequest) {
+            return;
+          }
+          console.info('shell ready, push chunk');
+          res.contentType('text/html');
+          res.statusCode = 200;
+          pipe(injector).pipe(res);
+        },
+        onShellError(error) {
+          console.error('error during shell', error);
+          res.contentType('text/html');
+          res.statusCode = 500;
+          res.end('something went wrong');
+        },
+        onError(error) {
+          didError = true;
+          // connect server error logs and client error logs
+          const digest = crypto.randomUUID();
+          // don't log abort as errors
+          if (!res.writableEnded) {
+            console.error(digest, 'failed to render page', error);
+          }
+          return digest;
+        },
+        onAllReady() {
+          console.info('render fully completed');
+          if (!isBotRequest || res.writableEnded || res.destroyed) {
+            return;
+          }
+          console.info('for a bot, push whole page at once');
+          res.contentType('text/html');
+          res.statusCode = didError ? 500 : 200;
+          pipe(injector).pipe(res);
+        },
+      },
+    );
 
     // client disconnected, abort rendering, enables next render
     // i am not sure if we need this, the browser, as soon as we
