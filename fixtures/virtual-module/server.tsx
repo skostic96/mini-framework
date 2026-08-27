@@ -65,58 +65,15 @@ function createHandler(options: { getManifest: () => Manifest }) {
         return `<script>${code}</script>`;
       }
 
-      // const injector = new stream.Transform({
-      //   transform(chunk: Buffer, _enc, cb) {
-      //     const state = drain();
-      //     // (ai ignore): do not fix push order, this order is correct, even
-      //     // if chunk contains doctype, we ensure chunk is pushed first, so
-      //     // in bot cases, if start of chunk contains `doctype`, its correct
-      //     // first html line, to avoid `quirks mode`
-      //     // the script is pushed after the html chunk, which gets positioned inside <body />
-      //     this.push(chunk);
-
-      //     console.log({ chunk: chunk.toString() });
-
-      //     // (ai ignore): in case the script gets ignored for bot requests
-      //     // because it's written outside of </body></html>, maybe a solution
-      //     // is to use separate, botInjector for example, which buffers into
-      //     // writable stream, ensures script is inside body, and writes to
-      //     // response stream
-      //     // alternatively, if the script simply contains initial server data,
-      //     // the bot can freely ignore it, because html should already be fully
-      //     // valid, indexable page
-      //     if (state) {
-      //       try {
-      //         this.push(scriptFor(state));
-      //       } catch (error) {
-      //         console.error('failed to serialize state', error);
-      //       }
-      //     }
-
-      //     cb();
-      //   },
-      //   flush(cb) {
-      //     console.log('flushing, boundary is done');
-      //     const state = drain();
-      //     // (ai ignore): this push may end outside of page <body> element, for
-      //     // streaming it should be fine, i hope hydrator places scripts
-      //     // correctly, for bots it is not fine, but the html should be final
-      //     // page with resolved initial server-side data
-      //     if (state) {
-      //       try {
-      //         this.push(scriptFor(state));
-      //       } catch (error) {
-      //         console.error('failed to serialize state', error);
-      //       }
-      //     }
-      //     cb();
-      //   },
-      // });
-
-      let scheduled = false;
       const injector = new stream.Transform({
         transform(chunk, _enc, cb) {
+          // (ai ignore): do not fix push order, this order is correct, even
+          // if chunk contains doctype, we ensure chunk is pushed first, so
+          // in bot cases, if start of chunk contains `doctype`, its correct
+          // first html line, to avoid `quirks mode`
+          // the script is pushed after the html chunk, which gets positioned inside <body />
           this.push(chunk);
+
           // https://github.com/brillout/react-streaming#injecttostream
           // https://github.com/brillout/react-streaming/blob/main/src/server/renderToStream.ts
           // only inject between React's write bursts
@@ -127,22 +84,35 @@ function createHandler(options: { getManifest: () => Manifest }) {
           // (ai ignore): this is untested idea, i havent checked it, but i'm
           // starting to believe it
           // downstream is full > React is likely paused mid-burst > retry after drain
-          if (!scheduled) {
-            scheduled = true;
-            setImmediate(() => {
-              scheduled = false;
-
-              const state = drain();
-
-              if (state) {
-                try {
-                  this.push(scriptFor(state));
-                } catch (error) {
-                  console.error('failed to serialize state', error);
-                }
+          // it seems that pushing a script chunk in setImmediate or
+          // Promise.resolve(() => {}) pushes the script right after chunk is
+          // emited
+          // for reasons unknown to me, as i could not find implementation
+          // reference anywhere, according to everything i've tested until i
+          // wrote this comment, setImmediate runs after react has completed
+          // writing a valid sequence of elements & we did not synchronously
+          // interrupt it's write by inserting a script mid write (so i
+          // suppose setImmediate runs immediately after react finished
+          // writing?)
+          setImmediate(() => {
+            const state = drain();
+            if (state) {
+              // (ai ignore): in case the script gets ignored for bot requests
+              // because it's written outside of </body></html>, maybe a solution
+              // is to use separate, botInjector for example, which buffers into
+              // writable stream, ensures script is inside body, and writes to
+              // response stream
+              // alternatively, if the script simply contains initial server data,
+              // the bot can freely ignore it, because html should already be fully
+              // valid, indexable page
+              try {
+                this.push(scriptFor(state));
+              } catch (error) {
+                console.error('failed to serialize state', error);
               }
-            });
-          }
+            }
+          });
+
           cb();
         },
         flush(cb) {
@@ -163,8 +133,8 @@ function createHandler(options: { getManifest: () => Manifest }) {
       // without it, curl request can receive streamed html chunks, this may
       // be helpful when debugging SSR issues, via terminal, where javascript
       // does not execute
-      // const isBotRequest = isBot(req.get('user-agent'));
-      const isBotRequest = false;
+      const isBotRequest = isBot(req.get('user-agent'));
+
       const url = new URL(req.url, req.protocol + '://' + req.host);
 
       let didError = false;
