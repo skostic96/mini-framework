@@ -93,7 +93,7 @@ const clientConfig: Configuration = {
   entry: {
     main: [
       'webpack-hot-middleware/client?path=/__webpack_hmr&reload=true&name=client',
-      path.resolve(root, 'client.tsx'),
+      path.resolve(root, 'src/client.tsx'),
     ],
   },
   output: {
@@ -158,7 +158,7 @@ const serverConfig: Configuration = {
   mode,
   target: 'node',
   entry: {
-    index: path.resolve(root, 'server.tsx'),
+    index: path.resolve(root, 'src/server.tsx'),
   },
   output: {
     path: path.resolve(root, 'dist/server'),
@@ -181,12 +181,6 @@ const serverConfig: Configuration = {
       allowlist: [/@rspack\/core\/hot\/poll/],
       importType: 'commonjs',
     }) as ExternalItem,
-  ],
-  plugins: [
-    new EmitEntryDeclarationFilePlugin({
-      entry: path.resolve(root, 'App.tsx'),
-      outName: 'index.d.ts',
-    }),
   ],
 };
 
@@ -246,7 +240,7 @@ app.get(/^\/(?!static\/).*/, async (req, res, next) => {
     const bundleExports = evalBundle(
       serverBundle,
       serverBundlePath,
-    ) as typeof import('./server');
+    ) as typeof import('./src/server');
 
     const createHandler = bundleExports.default;
 

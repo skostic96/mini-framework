@@ -19,6 +19,7 @@
     "@types/webpack-env": "^1.18.8",
     "@types/webpack-hot-middleware": "^2.25.12",
     "@typescript/typescript6": "^6.0.2",
+    "axios": "^1.20.0",
     "debug": "^4.4.3",
     "express": "^5.2.1",
     "is-object": "^1.0.2",
