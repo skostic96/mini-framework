@@ -6,6 +6,7 @@ A fixture, code, and explanation of the single component, rendered on the server
 
 - Tailwind integration
 - CSS imports `import ./styles.css`
+- Code Splitting & (css chunks as well?)
 
 ## Explanation
 
