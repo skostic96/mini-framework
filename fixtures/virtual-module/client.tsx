@@ -1,6 +1,7 @@
 import App from './App';
 import { StrictMode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
 import {
   QueryClientProvider,
   QueryClient,
@@ -24,9 +25,11 @@ const queryClient = new QueryClient({
 
 const RQ = (window.__RQ__ ||= []);
 RQ.forEach((dehydratedState) => {
+  console.log('found existing data to hydrate on client');
   hydrate(queryClient, dehydratedState);
 });
 RQ.push = (dehydratedState) => {
+  console.log('new data to hydrate on query client');
   hydrate(queryClient, dehydratedState);
   return 0;
 };
@@ -46,7 +49,9 @@ hydrateRoot(
   document,
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,
   {

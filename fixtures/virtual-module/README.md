@@ -255,6 +255,43 @@ The library covers the vast majority of the useful bots we should care about. I 
 
 There are also things to cover, such as early aborted requests: making sure the server handles those aborts by closing the stream correctly, avoiding multiple `pipe()` calls on the `res` (response) object, and so on.
 
+### WARNING - different module import instances
+
+```ts
+/**
+ * WARNING!!!!!!!!!!!!!!!!!!!
+ * THIS MODULE MUST NEVER IMPORT MODULES THAT ARE IMPORTED BY THE
+ * ISOMORPHIC `APP`. IF A MODULE IS SHARED, IT MUST BE COMPILED,
+ * AND RETRIEVED THROUGH COMPILED BUNDLE.
+ *
+ * THE REASON FOR THAT IS TWO DIFFERENT INSTANCES OF THE SAME IMPORT.
+ *
+ * EXAMPLE:
+ *
+ * APP.tsx
+ *
+ * import Context from './context'
+ *
+ * index.tsx
+ *
+ * import Context from './context'
+ *
+ * const App = evalBundle().default
+ * <Context.Provider>
+ *   <App />
+ * </Context.Provider>
+ *
+ * WARNING: INDEX.TSX AND APP.TSX HAVE A DIFFERENT INSTANCE OF CONTEXT MODULE.
+ *
+ * WARNING: ALL SHARED DEPENDENCIES BETWEEN ISOMORPHIC BUNDLE AND INDEX.TSX,
+ * TO COME INTO INDEX.TSX MUST BE RETRIEVED VIA COMPILED BUNDLE - OR IMPORT
+ * MUST HAPPEN THROUGH THE BUNDLE ( MAYBE CREATE REQUIRE BUNDLE PATH ? )
+ *
+ * THIS IS A PROBLEM BECAUSE VALUE PROVIDED THROUGH A PROVIDER, WILL **NOT**
+ * REACH A CONSUMER AND IS HARD TO DEBUG CRYPTIC BUG.
+ */
+```
+
 ### Important notes
 
 There are some important notes to keep in mind with this sample implementation.
