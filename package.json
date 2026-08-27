@@ -1,5 +1,4 @@
 {
-  "type": "commonjs",
   "scripts": {
     "dev": "tsx --watch app.mts",
     "build": "rspack",
