@@ -38,6 +38,7 @@
     "typescript": "^7.0.2",
     "webpack-hot-middleware": "^2.26.1",
     "webpack-hot-server-middleware": "^0.6.1",
+    "winston": "^3.19.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
