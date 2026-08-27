@@ -2,6 +2,14 @@
 
 Explanation of the ideas put together from next.js imlementation.
 
+## Important fixture
+
+After developing this example, i had come to an idea to try something else. One component, all pages, a simler approach, it let me focus on hydration, eager data pushing to the client during streaming, HMR, fast refresh and more.
+
+[virtual module - _the main goal was to explore vm.runInThisContext_](./fixtures/virtual-module/)
+
+The fixture goes beyond the name. Documentation in markdown readme file - all important findings and references.
+
 ## Explanation
 
 Below is the rough architectural layout, which enables all of this to work:
