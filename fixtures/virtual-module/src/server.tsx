@@ -15,7 +15,10 @@ import { StaticRouter } from 'react-router';
 
 export const manifestSchema = z.object({
   entrypoints: z.object({
-    main: z.array(z.string()),
+    main: z.object({
+      js: z.array(z.string()),
+      css: z.array(z.string()),
+    }),
   }),
 });
 
@@ -135,15 +138,27 @@ function createHandler(options: { getManifest: () => Manifest }) {
 
       const url = new URL(req.url, req.protocol + '://' + req.host);
 
+      // Important for server delivered links
+      // User controls the <html> document, but react allows us to render <link /> tags adjacent to <html> document for example
+      //
+      // <link /><html><head></head></html>
+      // React inserts the links, the position is controlled via `precedence` prop
+      // https://react.dev/reference/react-dom/components/link#controlling-stylesheet-precedence
+
       let didError = false;
       const { pipe, abort } = renderToPipeableStream(
-        <QueryClientProvider client={queryClient}>
-          <StaticRouter location={url.pathname}>
-            <App />
-          </StaticRouter>
-        </QueryClientProvider>,
+        <>
+          {manifest.entrypoints.main.css.map((href) => (
+            <link key={href} rel="stylesheet" href={href} precedence="app" />
+          ))}
+          <QueryClientProvider client={queryClient}>
+            <StaticRouter location={url.pathname}>
+              <App />
+            </StaticRouter>
+          </QueryClientProvider>
+        </>,
         {
-          bootstrapScripts: manifest.entrypoints.main,
+          bootstrapScripts: manifest.entrypoints.main.js,
           onShellReady() {
             if (isBotRequest) {
               return;

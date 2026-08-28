@@ -1,8 +1,11 @@
 import express from 'express';
-import rspack, {
-  type Configuration,
-  type RuleSetRule,
-  type ExternalItem,
+import rspack from '@rspack/core';
+import type {
+  GeneratorOptionsByModuleType,
+  ParserOptionsByModuleType,
+  ExternalItem,
+  RuleSetRule,
+  Configuration,
 } from '@rspack/core';
 import z from 'zod';
 import nodeExternals from 'webpack-node-externals';
@@ -48,8 +51,6 @@ import vm from 'node:vm';
  * REACH A CONSUMER AND IS HARD TO DEBUG CRYPTIC BUG.
  */
 
-import { EmitEntryDeclarationFilePlugin } from './EmitDeclarationFilePlugin';
-
 const envSchema = z.object({
   PORT: z.string().default('4000'),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
@@ -82,6 +83,40 @@ function swc(option: { isDev?: boolean; refresh?: boolean }): RuleSetRule {
           },
         },
       },
+    },
+  };
+}
+
+/**
+ * Enables loading css moduled, automatically deduced whether it's .module
+ * or .css file.
+ */
+function css(): RuleSetRule {
+  return {
+    test: /\.css$/i,
+    type: 'css/auto',
+  };
+}
+
+/**
+ * Enables `import styles from './App.module.css'` instead of named exports
+ * or `import * as styles from ''`
+ */
+function parser(): ParserOptionsByModuleType {
+  return {
+    'css/auto': {
+      namedExports: false,
+    },
+  };
+}
+
+// https://rspack.rs/config/module-generator
+function generator(): GeneratorOptionsByModuleType {
+  return {
+    'css/auto': {
+      // using [local] causes hydration missmatch (i don't know why), but
+      // using hash is fine
+      localIdentName: '[uniqueName]_[id]_[hash:5]',
     },
   };
 }
@@ -129,7 +164,9 @@ const clientConfig: Configuration = {
     },
   },
   module: {
-    rules: [swc({ isDev, refresh: isDev })],
+    rules: [swc({ isDev, refresh: isDev }), css()],
+    parser: parser(),
+    generator: generator(),
   },
   resolve: {
     extensions: ['...', '.tsx', '.ts'],
@@ -138,17 +175,27 @@ const clientConfig: Configuration = {
     isDev && new rspack.HotModuleReplacementPlugin(),
     isDev && new ReactRefreshRspackPlugin(),
     new RspackManifestPlugin({
-      generate: (seed, files, entries) => ({
-        ...seed,
-        entrypoints: Object.fromEntries(
-          Object.entries(entries).map(([name, chunkFiles]) => [
-            name,
-            chunkFiles
-              .filter((f) => !/\.hot-update\./.test(f))
-              .map((chunk) => `/static/${chunk}`),
-          ]),
-        ),
-      }),
+      generate: (seed, files, entries) => {
+        return {
+          ...seed,
+          entrypoints: Object.fromEntries(
+            Object.entries(entries).map(([name, chunkFiles]) => {
+              const filteredFiles = chunkFiles
+                .filter((f) => !/\.hot-update\./.test(f))
+                .map((chunk) => `/static/${chunk}`);
+              const isJs = (chunk: string) => /\.js$/.test(chunk);
+              const isCss = (chunk: string) => /\.css$/.test(chunk);
+              return [
+                name,
+                {
+                  js: filteredFiles.filter(isJs),
+                  css: filteredFiles.filter(isCss),
+                },
+              ];
+            }),
+          ),
+        };
+      },
     }),
   ],
 };
@@ -171,7 +218,9 @@ const serverConfig: Configuration = {
     chunkFormat: 'commonjs',
   },
   module: {
-    rules: [swc({ isDev })],
+    rules: [swc({ isDev }), css()],
+    parser: parser(),
+    generator: generator(),
   },
   resolve: {
     extensions: ['...', '.tsx', '.ts'],

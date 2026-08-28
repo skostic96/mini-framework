@@ -8,6 +8,7 @@ import {
   hydrate,
   type DehydratedState,
 } from '@tanstack/react-query';
+import './styles.css';
 
 declare global {
   interface Window {

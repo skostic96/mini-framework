@@ -1,0 +1,17 @@
+.list {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  margin: 0;
+  list-style: none;
+  border-bottom: 1px solid #ddd;
+}
+
+.link {
+  color: #444;
+  text-decoration: none;
+}
+
+.link:hover {
+  color: #000;
+}

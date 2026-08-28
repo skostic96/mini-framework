@@ -36,6 +36,7 @@
     "serialize-javascript": "^7.1.0",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",
+    "typescript-plugin-css-modules": "^5.2.0",
     "webpack-hot-middleware": "^2.26.1",
     "webpack-hot-server-middleware": "^0.6.1",
     "winston": "^3.19.0",

@@ -2,13 +2,15 @@ import { useState, Suspense } from 'react';
 import Layout from './Layout';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, Routes, Route, useSearchParams, useParams } from 'react-router';
+// todo: maybe we can have autocomplete for available classnames from css modules?
+import styles from './App.module.css';
 
 export default function App() {
   return (
     <Layout>
       <nav>
-        <ul>
-          <li>
+        <ul className={styles.list}>
+          <li className={styles.link}>
             <Link to="/">Home</Link>
           </li>
           <li>

@@ -4,6 +4,7 @@
     "target": "esnext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    "plugins": [{ "name": "typescript-plugin-css-modules" }],
   },
   "ignore": ["node_modules", "dist"],
 }
