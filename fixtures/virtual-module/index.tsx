@@ -87,6 +87,14 @@ function swc(option: { isDev?: boolean; refresh?: boolean }): RuleSetRule {
   };
 }
 
+function postcss(): RuleSetRule {
+  return {
+    test: /\.css$/,
+    use: ['postcss-loader'],
+    type: 'css',
+  };
+}
+
 /**
  * Enables loading css moduled, automatically deduced whether it's .module
  * or .css file.
@@ -164,7 +172,7 @@ const clientConfig: Configuration = {
     },
   },
   module: {
-    rules: [swc({ isDev, refresh: isDev }), css()],
+    rules: [postcss(), css(), swc({ isDev, refresh: isDev })],
     parser: parser(),
     generator: generator(),
   },
@@ -218,7 +226,7 @@ const serverConfig: Configuration = {
     chunkFormat: 'commonjs',
   },
   module: {
-    rules: [swc({ isDev }), css()],
+    rules: [postcss(), css(), swc({ isDev })],
     parser: parser(),
     generator: generator(),
   },

@@ -140,21 +140,39 @@ function Todos() {
   });
 
   return (
-    <main>
-      <h1>Todos</h1>
-      <ul>
-        {data.map((todo) => {
-          return (
-            <li key={todo.id}>
-              <Link to={String(todo.id)}>
-                <div>
-                  {todo.id} : {todo.title}
-                </div>
-                <div>{todo.completed ? '✅ Done' : '⏳ Pending'}</div>
-              </Link>
-            </li>
-          );
-        })}
+    <main className="mx-auto max-w-2xl px-4 py-10">
+      <h1 className="mb-6 text-3xl font-bold tracking-tight text-slate-900">
+        Todos
+      </h1>
+
+      <ul className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {data.map((todo) => (
+          <li key={todo.id}>
+            <Link
+              to={String(todo.id)}
+              className="flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-500">
+                  {todo.id}
+                </span>
+                <span className="truncate text-sm text-slate-800">
+                  {todo.title}
+                </span>
+              </div>
+
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  todo.completed
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-amber-100 text-amber-700'
+                }`}
+              >
+                {todo.completed ? '✅ Done' : '⏳ Pending'}
+              </span>
+            </Link>
+          </li>
+        ))}
       </ul>
     </main>
   );
@@ -190,8 +208,40 @@ function Todo(props: { id?: string }) {
   });
 
   return (
-    <p>
-      {data.title} - {data.completed ? 'done' : 'open'}
-    </p>
+    <article className="mx-auto max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <header className="mb-4 flex items-start justify-between gap-4">
+        <h2 className="text-lg font-semibold leading-snug text-slate-900">
+          {data.title}
+        </h2>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+            data.completed
+              ? 'bg-green-100 text-green-700'
+              : 'bg-amber-100 text-amber-700'
+          }`}
+        >
+          {data.completed ? 'Done' : 'Open'}
+        </span>
+      </header>
+
+      <dl className="divide-y divide-slate-100 text-sm">
+        <div className="flex justify-between py-2">
+          <dt className="text-slate-500">ID</dt>
+          <dd className="font-mono text-slate-900">{data.id}</dd>
+        </div>
+        <div className="flex justify-between py-2">
+          <dt className="text-slate-500">User ID</dt>
+          <dd className="font-mono text-slate-900">{data.userId}</dd>
+        </div>
+        <div className="flex justify-between gap-6 py-2">
+          <dt className="shrink-0 text-slate-500">Title</dt>
+          <dd className="text-right text-slate-900">{data.title}</dd>
+        </div>
+        <div className="flex justify-between py-2">
+          <dt className="text-slate-500">Completed</dt>
+          <dd className="text-slate-900">{String(data.completed)}</dd>
+        </div>
+      </dl>
+    </article>
   );
 }
