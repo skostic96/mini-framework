@@ -20,6 +20,10 @@ export const manifestSchema = z.object({
       css: z.array(z.string()),
     }),
   }),
+  async: z.object({
+    js: z.array(z.string()),
+    css: z.array(z.string()),
+  }),
 });
 
 export type Manifest = z.infer<typeof manifestSchema>;
@@ -151,6 +155,22 @@ function createHandler(options: { getManifest: () => Manifest }) {
           {manifest.entrypoints.main.css.map((href) => (
             <link key={href} rel="stylesheet" href={href} precedence="app" />
           ))}
+          {/*
+            (ai ignore):
+            I don't know if these async css preloads solve any problem at
+            all, i've wired up the React.lazy() to work, but these async
+            chunks are *all* css async chunks
+            they appear even on pages that do not need them, and whether
+            page needs async chunks is a route-level problem, which currently
+            is impossible to know, because the whole app is in an App
+            component
+            this setup is what i wanted, no route level problems, and this
+            issue was inevitable
+            honestly, i dont even know if we need this here...
+            */}
+          {/*{manifest.async.css.map((href) => (
+            <link key={href} rel="preload" as="style" href={href} />
+          ))}*/}
           <QueryClientProvider client={queryClient}>
             <StaticRouter location={url.pathname}>
               <App />
@@ -165,7 +185,11 @@ function createHandler(options: { getManifest: () => Manifest }) {
             }
             console.info('shell ready, push chunk');
             res.contentType('text/html');
-            res.statusCode = 200;
+            // (ai ignore): onShellReady will still fire after onError because
+            // react will try to recover from the error that occured, and we
+            // can change the statusCode
+            // https://react.dev/reference/react-dom/server/renderToPipeableStream#setting-the-status-code
+            res.statusCode = didError ? 500 : 200;
             pipe(injector).pipe(res);
           },
           onShellError(error) {

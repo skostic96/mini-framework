@@ -2,10 +2,6 @@
 
 A fixture, code, and explanation of the single component, rendered on the server and the client.
 
-## TODO
-
-- Code Splitting & (css chunks as well?)
-
 ## Explanation
 
 The code implements a single, catch-all route that performs streaming server-side rendering.
@@ -295,6 +291,75 @@ This library may not be mainstream due to low download count, but is an awesome 
  * REACH A CONSUMER AND IS HARD TO DEBUG CRYPTIC BUG.
  */
 ```
+
+### Code-Splitting with `React.lazy()`
+
+Writing to disk made it easier to see the bundle actually being split by React.lazy(), on both the server and the client side:
+
+```tsx
+const devMiddlewareInstance = devMiddleware(multiCompiler, {
+  publicPath: '/static/',
+  // **WARNING** -- nice for debugging - causes lots of issues --
+  //
+  // enabling disk writing causes HMR to reload every page on
+  // every modification to the code, this is nice for debugging, and tempting
+  // to use to avoid inlining whole server bundle into a single file, so the
+  // server bundle is required from the disk ( - which causes a set of whole
+  // other problems - )
+  //
+  // writeToDisk: true,
+});
+```
+
+However, as the comment notes, it caused HMR issues - which is a separate problem from the one that followed.
+
+The real issue is that the server bundle is evaluated in memory, but every require inside it resolves against the real file system:
+
+```tsx
+function evalBundle(src: string, filename: string) {
+  const _module = { exports: {} };
+  const _require = Module.createRequire(filename);
+  const fun = vm.compileFunction(
+    src,
+    ['exports', 'require', 'module', '__filename', '__dirname'],
+    { filename },
+  );
+  fun(_module.exports, _require, _module, filename, path.dirname(filename));
+  return _module.exports;
+}
+```
+
+So when a lazy chunk is requested, require looks for a file that only exists in memfs, and fails.
+
+One solution would have been to keep the chunk lookups inside the bundle - for example by using a dedicated path or prefix - or to write a custom require that resolves against memfs:
+
+```tsx
+const memfs = devMiddlewareInstance.context
+  .outputFileSystem as typeof import('node:fs') &
+  import('@rspack/dev-middleware').OutputFileSystem;
+```
+
+That probably would have been enough, but since performance isn't part of this fixture, I went with the simpler option: inline everything into a single server bundle.
+
+```tsx
+const serverConfig: Configuration = {
+  name: 'server',
+  target: 'node',
+  entry: {
+    index: path.resolve(root, 'src/server.tsx'),
+  },
+  plugins: [
+    // on the server ignore every React.lazy() import and put everything in one
+    // file because we evaluate bundle in memory and require imports files from
+    // the file system, because externals are not included in the server bundle
+    new rspack.optimize.LimitChunkCountPlugin({
+      maxChunks: 1,
+    }),
+  ],
+};
+```
+
+And that's pretty much it - on the client it just works. I'm fairly sure I still need a deeper understanding of how it works, why it works, how it's wired up, and what should be linked on each page. For now, though, I've hit all the exploration points I set out to cover, and I'm happy with that.
 
 ### Important notes
 

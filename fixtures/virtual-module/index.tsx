@@ -184,15 +184,29 @@ const clientConfig: Configuration = {
     isDev && new ReactRefreshRspackPlugin(),
     new RspackManifestPlugin({
       generate: (seed, files, entries) => {
+        const isHotChunk = (chunk: string) => /\.hot-update\./.test(chunk);
+        const isJs = (chunk: string) => /\.js$/.test(chunk);
+        const isCss = (chunk: string) => /\.css$/.test(chunk);
+
+        const relevant = files.filter((file) => {
+          return file.isChunk && !file.isModuleAsset && !isHotChunk(file.path);
+        });
+
+        // all async chunks are loaded on every page, it's not performant, but
+        // it's enough for this fixture, for something more serious,
+        // performance critical, a finer chunk granulation would be needed
+        const async = relevant
+          .filter((file) => !file.isInitial)
+          .map((f) => f.path);
+
         return {
           ...seed,
           entrypoints: Object.fromEntries(
             Object.entries(entries).map(([name, chunkFiles]) => {
               const filteredFiles = chunkFiles
-                .filter((f) => !/\.hot-update\./.test(f))
+                .filter((f) => !isHotChunk(f))
                 .map((chunk) => `/static/${chunk}`);
-              const isJs = (chunk: string) => /\.js$/.test(chunk);
-              const isCss = (chunk: string) => /\.css$/.test(chunk);
+
               return [
                 name,
                 {
@@ -202,6 +216,10 @@ const clientConfig: Configuration = {
               ];
             }),
           ),
+          async: {
+            js: async.filter(isJs),
+            css: async.filter(isCss),
+          },
         };
       },
     }),
@@ -239,6 +257,14 @@ const serverConfig: Configuration = {
       importType: 'commonjs',
     }) as ExternalItem,
   ],
+  plugins: [
+    // on the server ignore every React.lazy() import and put everything in one
+    // file because we evaluate bundle in memory and require imports files from
+    // the file system, because externals are not included in the server bundle
+    new rspack.optimize.LimitChunkCountPlugin({
+      maxChunks: 1,
+    }),
+  ],
 };
 
 const multiCompiler = rspack([clientConfig, serverConfig]);
@@ -248,6 +274,15 @@ const app = express();
 
 const devMiddlewareInstance = devMiddleware(multiCompiler, {
   publicPath: '/static/',
+  // **WARNING** -- nice for debugging - causes lots of issues --
+  //
+  // enabling disk writing causes HMR to reload every page on
+  // every modification to the code, this is nice for debugging, and tempting
+  // to use to avoid inlining whole server bundle into a single file, so the
+  // server bundle is required from the disk ( - which causes a set of whole
+  // other problems - )
+  //
+  // writeToDisk: true,
 });
 
 app.use(devMiddlewareInstance);
