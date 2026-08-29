@@ -1,12 +1,20 @@
-import { useState, Suspense, lazy } from 'react';
+import { useState, Suspense } from 'react';
 import Layout from './Layout';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, Routes, Route, useSearchParams, useParams } from 'react-router';
+import Loading from './Loading';
 // todo: maybe we can have autocomplete for available classnames from css modules?
 import styles from './App.module.css';
+import { loadable } from './ctx';
 
-const Todos = lazy(() => import('./Todos'));
-const Todo = lazy(() => import('./Todo'));
+const Todos = loadable(
+  () => import(/* webpackChunkName: "todos" */ './Todos'),
+  'todos',
+);
+const Todo = loadable(
+  () => import(/* webpackChunkName: "todo" */ './Todo'),
+  'todo',
+);
 
 export default function App() {
   return (
@@ -75,10 +83,6 @@ function Home() {
       </Suspense>
     </main>
   );
-}
-
-function Loading() {
-  return <p>Loading...</p>;
 }
 
 function ErrorInfo(props: { message: string }) {

@@ -12,6 +12,7 @@ import stream from 'node:stream';
 import { isBot } from 'isbot';
 import { renderToPipeableStream } from 'react-dom/server';
 import { StaticRouter } from 'react-router';
+import { CtxProvider } from './ctx';
 
 export const manifestSchema = z.object({
   entrypoints: z.object({
@@ -25,6 +26,10 @@ export const manifestSchema = z.object({
     css: z.array(z.string()),
   }),
 });
+
+function urlFromRequest(req: Request) {
+  return new URL(req.url, req.protocol + '://' + req.host);
+}
 
 export type Manifest = z.infer<typeof manifestSchema>;
 
@@ -68,6 +73,37 @@ function createHandler(options: { getManifest: () => Manifest }) {
         const serialized = serialize(state);
         const code = `(window.__RQ__=window.__RQ__||[]).push(${serialized});`;
         return `<script>${code}</script>`;
+      }
+
+      const async = {
+        js: new Set<string>(),
+        css: new Set<string>(),
+      };
+
+      const sentAsync = {
+        js: new Set<string>(),
+        css: new Set<string>(),
+      };
+
+      function drainAsync(): { js: string[]; css: string[] } {
+        const delta: { js: string[]; css: string[] } = {
+          js: [],
+          css: [],
+        };
+
+        for (const kind of ['js', 'css'] as const) {
+          for (const url of async[kind]) {
+            if (sentAsync[kind].has(url)) continue;
+            sentAsync[kind].add(url);
+            delta[kind].push(url);
+          }
+        }
+
+        if (!delta.js.length && !delta.css.length) {
+          return null;
+        }
+
+        return delta;
       }
 
       const injector = new stream.Transform({
@@ -116,6 +152,18 @@ function createHandler(options: { getManifest: () => Manifest }) {
                 console.error('failed to serialize state', error);
               }
             }
+
+            const asyncAssets = drainAsync();
+
+            if (asyncAssets) {
+              const css = asyncAssets.css.map(
+                (href) => `<link rel="stylesheet" href="${href}" />`,
+              );
+              const js = asyncAssets.js.map(
+                (href) => `<link rel="modulepreload" href="${href}" />`,
+              );
+              this.push(css.concat(js).join('\n'));
+            }
           });
 
           cb();
@@ -138,9 +186,10 @@ function createHandler(options: { getManifest: () => Manifest }) {
       // without it, curl request can receive streamed html chunks, this may
       // be helpful when debugging SSR issues, via terminal, where javascript
       // does not execute
-      const isBotRequest = isBot(req.get('user-agent'));
+      // const isBotRequest = isBot(req.get('user-agent'));
+      const isBotRequest = false;
 
-      const url = new URL(req.url, req.protocol + '://' + req.host);
+      const url = urlFromRequest(req);
 
       // Important for server delivered links
       // User controls the <html> document, but react allows us to render <link /> tags adjacent to <html> document for example
@@ -173,7 +222,21 @@ function createHandler(options: { getManifest: () => Manifest }) {
           ))}*/}
           <QueryClientProvider client={queryClient}>
             <StaticRouter location={url.pathname}>
-              <App />
+              <CtxProvider
+                value={(id) => {
+                  console.log('from suspense', { id });
+                  const js = manifest.async.js.filter((name) =>
+                    name.endsWith(id + '.js'),
+                  );
+                  const css = manifest.async.css.filter((name) =>
+                    name.endsWith(id + '.css'),
+                  );
+                  js.forEach((f) => async.js.add(f));
+                  css.forEach((f) => async.css.add(f));
+                }}
+              >
+                <App />
+              </CtxProvider>
             </StaticRouter>
           </QueryClientProvider>
         </>,

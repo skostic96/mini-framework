@@ -1,5 +1,14 @@
+import { Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
+import { loadable } from './ctx';
+import Loading from './Loading';
+import slow from './slow';
+
+const TodosSlowFoo = loadable(
+  () => import(/* webpackChunkName: "TodosSlowFoo" */ './TodosSlowFoo'),
+  'TodosSlowFoo',
+);
 
 interface Todo {
   userId: number;
@@ -36,7 +45,8 @@ export default function Todos() {
 
   const { data } = useSuspenseQuery({
     queryKey: ['todos', QUERY_PARAM.LIMIT],
-    queryFn: fetchTodos(params),
+    queryFn: ({ signal }) =>
+      slow({ resolver: fetchTodos(params)({ signal }) }, 2000),
   });
 
   return (
@@ -74,6 +84,10 @@ export default function Todos() {
           </li>
         ))}
       </ul>
+
+      <Suspense fallback={<Loading />}>
+        <TodosSlowFoo />
+      </Suspense>
     </main>
   );
 }
