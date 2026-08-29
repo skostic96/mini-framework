@@ -154,7 +154,6 @@ function createHandler(options: { getManifest: () => Manifest }) {
             }
 
             const asyncAssets = drainAsync();
-
             if (asyncAssets) {
               const css = asyncAssets.css.map(
                 (href) => `<link rel="stylesheet" href="${href}" />`,
@@ -224,7 +223,6 @@ function createHandler(options: { getManifest: () => Manifest }) {
             <StaticRouter location={url.pathname}>
               <CtxProvider
                 value={(id) => {
-                  console.log('from suspense', { id });
                   const js = manifest.async.js.filter((name) =>
                     name.endsWith(id + '.js'),
                   );
