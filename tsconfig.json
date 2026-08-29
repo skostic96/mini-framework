@@ -4,7 +4,8 @@
     "target": "esnext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "plugins": [{ "name": "typescript-plugin-css-modules" }],
+    "esModuleInterop": true,
   },
-  "ignore": ["node_modules", "dist"],
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist"],
 }
