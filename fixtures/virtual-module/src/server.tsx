@@ -185,8 +185,7 @@ function createHandler(options: { getManifest: () => Manifest }) {
       // without it, curl request can receive streamed html chunks, this may
       // be helpful when debugging SSR issues, via terminal, where javascript
       // does not execute
-      // const isBotRequest = isBot(req.get('user-agent'));
-      const isBotRequest = false;
+      const isBotRequest = isBot(req.get('user-agent'));
 
       const url = urlFromRequest(req);
 
