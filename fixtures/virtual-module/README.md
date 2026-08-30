@@ -294,6 +294,10 @@ This library may not be mainstream due to low download count, but is an awesome 
 
 ### Code-Splitting with `React.lazy()`
 
+Explanation of the implementation of code-splitting feature on the client and server side.
+
+#### Implementation
+
 Writing to disk made it easier to see the bundle actually being split by React.lazy(), on both the server and the client side:
 
 ```tsx
@@ -360,6 +364,54 @@ const serverConfig: Configuration = {
 ```
 
 And that's pretty much it - on the client it just works. I'm fairly sure I still need a deeper understanding of how it works, why it works, how it's wired up, and what should be linked on each page. For now, though, I've hit all the exploration points I set out to cover, and I'm happy with that.
+
+#### Loader
+
+Libraries:
+
+- magic-string
+- acorn
+- acorn-walk
+
+The implementation turned out to be more touchy than it seemed before I started.
+
+`magic-string` is used because it makes it easy to manipulate the source, insert comments at known offsets, check whether the source was actually changed, and return a result based on that.
+
+Three problems came up.
+
+##### 1. Deciding whether an imported `loadable` is ours
+
+The loader must only transform calls to _our_ `loadable`. A user may well have their own function by that name that does something else entirely, and we must leave it alone.
+
+An absolute import is easy to check, since the specifier is enough on its own:
+
+```js
+import { loadable } from '@/ctx-loadable';
+```
+
+A relative import isn't, and the user is of course free to write one. To resolve it we need three pieces of information:
+
+- The location of the importing file
+- The location of the imported `loadable`
+- The location of our framework-internal `loadable`
+
+With those we can resolve the specifier to an absolute path, compare it against our own, and then either insert the magic comment or skip the call.
+
+##### 2. Recognizing the call and inferring the chunk name
+
+While iterating call expressions, we have to decide whether each one is a `loadable` call. If it is, we walk the factory's inner AST to find the `import()` expression. Whether we can extract its specifier depends on the form of the factory.
+
+The second argument — the module id — has the same limitation: it's only inferable when it's a string literal or a template literal. Anything more complex, a function or an arbitrary expression, would require evaluating it, which I don't see a good way to do.
+
+The easy way out is to define the conditions under which we can infer the chunk name, and require the user to supply their own magic comment and module id if they step outside them:
+
+```js
+import(/* webpackChunkName: "some-chunk-name" */ './module');
+```
+
+##### 3. The variety of factory forms
+
+There are many ways to declare or define a factory within a single module, and it's hard to enumerate them all up front. The AST parser gets us as far as iterating every call expression; the rest of the logic comes from working through the forms case by case.
 
 ### Important notes
 
