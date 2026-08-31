@@ -19,7 +19,7 @@ interface Todo {
 
 const fetchTodos =
   (params: URLSearchParams) =>
-  async ({ signal }) => {
+  async ({ signal }: { signal: AbortSignal }) => {
     const res = await fetch(
       `https://jsonplaceholder.typicode.com/todos?${params.toString()}`,
       { signal },

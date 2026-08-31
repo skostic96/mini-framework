@@ -85,7 +85,7 @@ function createHandler(options: { getManifest: () => Manifest }) {
         css: new Set<string>(),
       };
 
-      function drainAsync(): { js: string[]; css: string[] } {
+      function drainAsync(): { js: string[]; css: string[] } | null {
         const delta: { js: string[]; css: string[] } = {
           js: [],
           css: [],

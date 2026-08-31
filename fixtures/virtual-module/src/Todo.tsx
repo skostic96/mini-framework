@@ -11,7 +11,7 @@ interface Todo {
 
 const fetchTodo =
   (option: { id: string }) =>
-  async ({ signal }) => {
+  async ({ signal }: { signal: AbortSignal }) => {
     const res = await fetch(
       `https://jsonplaceholder.typicode.com/todos/${option.id}`,
       { signal },

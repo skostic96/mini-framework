@@ -6,10 +6,12 @@ import type {
   ExternalItem,
   RuleSetRule,
   Configuration,
+  StatsCompilation,
 } from '@rspack/core';
 import z from 'zod';
 import nodeExternals from 'webpack-node-externals';
 import { devMiddleware } from '@rspack/dev-middleware';
+import type { ExtendedServerResponse } from '@rspack/dev-middleware';
 import hotMiddleware from 'webpack-hot-middleware';
 import { RspackManifestPlugin } from 'rspack-manifest-plugin';
 import { ReactRefreshRspackPlugin } from '@rspack/plugin-react-refresh';
@@ -315,34 +317,150 @@ function evalBundle(src: string, filename: string) {
   return _module.exports;
 }
 
+type ServerBundle = typeof import('./src/server');
+type ClientManifest = { [key: string]: any };
+
+declare global {
+  namespace Express {
+    interface Locals extends NonNullable<ExtendedServerResponse['locals']> {
+      getServerBundle: () => ServerBundle;
+      getClientManifest: () => ClientManifest;
+    }
+  }
+}
+
+type DevMiddleware = ReturnType<typeof devMiddleware>;
+
+function getStats(middleware: DevMiddleware) {
+  const stats = middleware.context.stats?.toJson({});
+  if (!stats) {
+    throw new Error(
+      'This might be a bug. Stats are missing. ' +
+        "Anything that depends on stats won't run.",
+    );
+  }
+  return stats;
+}
+
+function statsFor(prefix: string) {
+  return function isStat(arg: StatsCompilation): boolean {
+    return !!arg.name?.startsWith(prefix);
+  };
+}
+
+function assertExist(arg: StatsCompilation | undefined, str: string) {
+  if (!arg) {
+    throw new Error(
+      `Expected ${str} to be defined. ` +
+        `This might be a bug. ` +
+        `Anything that depends on ${str} won't run.`,
+    );
+  }
+  return arg;
+}
+
+function getStatsFor(
+  middleware: DevMiddleware,
+  predicate: (stats: StatsCompilation) => boolean,
+  str: string,
+) {
+  const { children } = getStats(middleware);
+
+  const found = children?.find(predicate);
+
+  return assertExist(found, str);
+}
+
+function getServerStats(middleware: DevMiddleware) {
+  return getStatsFor(middleware, statsFor('server'), 'server stats');
+}
+
+function getClientStats(middleware: DevMiddleware) {
+  return getStatsFor(middleware, statsFor('client'), 'client stats');
+}
+
+function getMemfs(middleware: DevMiddleware) {
+  const memfs = middleware.context
+    .outputFileSystem as typeof import('node:fs') &
+    import('@rspack/dev-middleware').OutputFileSystem;
+
+  return memfs;
+}
+
+function getOutputPath(stats: StatsCompilation) {
+  const outputPath = stats.outputPath;
+
+  if (!outputPath) {
+    throw new Error(
+      `Missing outputPath: "${outputPath}" from stats compilation.`,
+    );
+  }
+
+  return outputPath;
+}
+
+function getServerBundle(middleware: DevMiddleware) {
+  const memfs = getMemfs(middleware);
+
+  const server = getServerStats(middleware);
+
+  const outputPath = getOutputPath(server);
+
+  const serverBundlePath = path.join(outputPath, 'index.js');
+  const serverBundle = memfs.readFileSync(serverBundlePath, 'utf-8');
+
+  // (ai ignore)(todo): fix the typing... maybe...
+  const bundleExports = evalBundle(
+    serverBundle,
+    serverBundlePath,
+  ) as typeof import('./src/server');
+
+  return bundleExports;
+}
+
+function getClientManifest(middleware: DevMiddleware): {
+  [key: string]: any;
+} {
+  const memfs = getMemfs(middleware);
+  const client = getClientStats(middleware);
+
+  const outputPath = getOutputPath(client);
+
+  return JSON.parse(
+    memfs.readFileSync(path.join(outputPath, 'manifest.json'), 'utf-8'),
+  );
+}
+
+function localsFromDevMiddleware(middleware: DevMiddleware) {
+  function attachDevLocals(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) {
+    res.locals.getServerBundle = function _getServerBundle() {
+      return getServerBundle(middleware);
+    };
+
+    res.locals.getClientManifest = function _getClientManifest() {
+      return getClientManifest(middleware);
+    };
+
+    return next();
+  }
+
+  return attachDevLocals;
+}
+
+app.use(localsFromDevMiddleware(devMiddlewareInstance));
+
 app.get(/^\/(?!static\/).*/, async (req, res, next) => {
   try {
-    const memfs = devMiddlewareInstance.context
-      .outputFileSystem as typeof import('node:fs') &
-      import('@rspack/dev-middleware').OutputFileSystem;
-
-    const { children } = devMiddlewareInstance.context.stats.toJson({});
-    const client = children.find((c) => c.name.startsWith('client'));
-    const server = children.find((c) => c.name.startsWith('server'));
-
-    const serverBundlePath = path.join(server.outputPath, 'index.js');
-    const serverBundle = memfs.readFileSync(serverBundlePath, 'utf-8');
-
-    // (ai ignore)(todo): fix the typing... maybe...
-    const bundleExports = evalBundle(
-      serverBundle,
-      serverBundlePath,
-    ) as typeof import('./src/server');
+    const bundleExports = res.locals.getServerBundle();
 
     const createHandler = bundleExports.default;
 
     const manifest = bundleExports.manifestSchema.parse(
-      JSON.parse(
-        memfs.readFileSync(
-          path.join(client.outputPath, 'manifest.json'),
-          'utf-8',
-        ),
-      ),
+      res.locals.getClientManifest(),
     );
 
     return await createHandler({ getManifest: () => manifest })(req, res, next);
