@@ -10,7 +10,7 @@ import {
 import serialize from 'serialize-javascript';
 import stream from 'node:stream';
 import { isBot } from 'isbot';
-import { renderToPipeableStream } from 'react-dom/server';
+import { renderToPipeableStream, renderToStaticMarkup } from 'react-dom/server';
 import { StaticRouter } from 'react-router';
 import { CtxProvider } from './ctx';
 
@@ -33,6 +33,96 @@ function urlFromRequest(req: Request) {
 
 export type Manifest = z.infer<typeof manifestSchema>;
 
+interface Assets {
+  js: Set<string>;
+  css: Set<string>;
+}
+
+class AsyncAssets {
+  private assets: Assets;
+  private sentAssets: Assets;
+
+  constructor(assets: Assets = { js: new Set(), css: new Set() }) {
+    this.assets = assets;
+    this.sentAssets = {
+      js: new Set(),
+      css: new Set(),
+    };
+  }
+
+  addJS(file: string) {
+    this.assets.js.add(file);
+  }
+
+  addCSS(file: string) {
+    this.assets.css.add(file);
+  }
+
+  getAssets() {
+    return this.assets;
+  }
+
+  drain() {
+    const delta: { js: string[]; css: string[] } = {
+      js: [],
+      css: [],
+    };
+
+    for (const kind of ['js', 'css'] as const) {
+      for (const url of this.assets[kind]) {
+        if (this.sentAssets[kind].has(url)) continue;
+        this.sentAssets[kind].add(url);
+        delta[kind].push(url);
+      }
+    }
+
+    if (!delta.js.length && !delta.css.length) {
+      return null;
+    }
+
+    return delta;
+  }
+
+  static Link(props: React.LinkHTMLAttributes<HTMLLinkElement>): string {
+    return renderToStaticMarkup(<link {...props} />);
+  }
+}
+
+function scriptFor(state: unknown) {
+  const serialized = serialize(state);
+  const code = `(window.__RQ__=window.__RQ__||[]).push(${serialized});`;
+  return `<script>${code}</script>`;
+}
+
+class QueryDrainer {
+  #sent: Set<string>;
+
+  constructor(sent: Set<string> = new Set<string>()) {
+    this.#sent = sent;
+  }
+
+  drain(queryClient: QueryClient) {
+    const state = dehydrate(queryClient, {
+      shouldDehydrateQuery: (query) => {
+        // (ai ignore): avoid sending the data to the client to send less
+        // bytes over the network
+        const isSent = this.#sent.has(query.queryHash);
+        return defaultShouldDehydrateQuery(query) && !isSent;
+      },
+    });
+
+    if (!state.queries.length) {
+      return null;
+    }
+
+    state.queries.forEach((query) => {
+      this.#sent.add(query.queryHash);
+    });
+
+    return state;
+  }
+}
+
 function createHandler(options: { getManifest: () => Manifest }) {
   async function handler(req: Request, res: Response, next: NextFunction) {
     try {
@@ -46,65 +136,9 @@ function createHandler(options: { getManifest: () => Manifest }) {
         },
       });
 
-      const sent = new Set<string>();
+      const queryDrainer = new QueryDrainer();
 
-      const drain = () => {
-        const state = dehydrate(queryClient, {
-          shouldDehydrateQuery: (query) => {
-            // (ai ignore): avoid sending the data to the client to send less
-            // bytes over the network
-            const isSent = sent.has(query.queryHash);
-            return defaultShouldDehydrateQuery(query) && !isSent;
-          },
-        });
-
-        if (!state.queries.length) {
-          return null;
-        }
-
-        state.queries.forEach((query) => {
-          sent.add(query.queryHash);
-        });
-
-        return state;
-      };
-
-      function scriptFor(state: unknown) {
-        const serialized = serialize(state);
-        const code = `(window.__RQ__=window.__RQ__||[]).push(${serialized});`;
-        return `<script>${code}</script>`;
-      }
-
-      const async = {
-        js: new Set<string>(),
-        css: new Set<string>(),
-      };
-
-      const sentAsync = {
-        js: new Set<string>(),
-        css: new Set<string>(),
-      };
-
-      function drainAsync(): { js: string[]; css: string[] } | null {
-        const delta: { js: string[]; css: string[] } = {
-          js: [],
-          css: [],
-        };
-
-        for (const kind of ['js', 'css'] as const) {
-          for (const url of async[kind]) {
-            if (sentAsync[kind].has(url)) continue;
-            sentAsync[kind].add(url);
-            delta[kind].push(url);
-          }
-        }
-
-        if (!delta.js.length && !delta.css.length) {
-          return null;
-        }
-
-        return delta;
-      }
+      const asyncAssets = new AsyncAssets();
 
       const injector = new stream.Transform({
         transform(chunk, _enc, cb) {
@@ -136,7 +170,7 @@ function createHandler(options: { getManifest: () => Manifest }) {
           // suppose setImmediate runs immediately after react finished
           // writing?)
           setImmediate(() => {
-            const state = drain();
+            const state = queryDrainer.drain(queryClient);
             if (state) {
               // (ai ignore): in case the script gets ignored for bot requests
               // because it's written outside of </body></html>, maybe a solution
@@ -153,13 +187,13 @@ function createHandler(options: { getManifest: () => Manifest }) {
               }
             }
 
-            const asyncAssets = drainAsync();
-            if (asyncAssets) {
-              const css = asyncAssets.css.map(
-                (href) => `<link rel="stylesheet" href="${href}" />`,
+            const assets = asyncAssets.drain();
+            if (assets) {
+              const css = assets.css.map((href) =>
+                AsyncAssets.Link({ rel: 'stylesheet', href }),
               );
-              const js = asyncAssets.js.map(
-                (href) => `<link rel="modulepreload" href="${href}" />`,
+              const js = assets.js.map((href) =>
+                AsyncAssets.Link({ rel: 'modulepreload', href }),
               );
               this.push(css.concat(js).join('\n'));
             }
@@ -172,7 +206,7 @@ function createHandler(options: { getManifest: () => Manifest }) {
           // <html> tag was pushed already, and this script will be ignored
           // by the client ( to the browser, this should be parse-able, to
           // a real user ... maybe keep it)
-          const state = drain();
+          const state = queryDrainer.drain(queryClient);
           if (state) {
             this.push(scriptFor(state));
           }
@@ -228,8 +262,8 @@ function createHandler(options: { getManifest: () => Manifest }) {
                   const css = manifest.async.css.filter((name) =>
                     name.endsWith(id + '.css'),
                   );
-                  js.forEach((f) => async.js.add(f));
-                  css.forEach((f) => async.css.add(f));
+                  js.forEach((f) => asyncAssets.addJS(f));
+                  css.forEach((f) => asyncAssets.addCSS(f));
                 }}
               >
                 <App />
